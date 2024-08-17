@@ -1,3 +1,7 @@
+outputs/
+output*/
+/*.mp4
+/*.jpg
 # SAM 2
 .vscode/
 .DS_Store

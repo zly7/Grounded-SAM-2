@@ -113,7 +113,7 @@ for start_frame_idx in range(0, len(frame_names), step):
         point_coords=None,
         point_labels=None,
         box=input_boxes,
-        multimask_output=False,
+        multimask_output=False,  # 这里也不多任务预测
     )
     # convert the mask shape to (n, H, W)
     if masks.ndim == 2:
@@ -137,14 +137,14 @@ for start_frame_idx in range(0, len(frame_names), step):
     """
     Step 4: Propagate the video predictor to get the segmentation results for each frame
     """
-    objects_count = mask_dict.update_masks(tracking_annotation_dict=sam2_masks, iou_threshold=0.8, objects_count=objects_count)
+    objects_count = mask_dict.update_masks(tracking_annotation_dict=sam2_masks, iou_threshold=0.8, objects_count=objects_count) # 在这里和之前的进行关联
     print("objects_count", objects_count)
     video_predictor.reset_state(inference_state)
     if len(mask_dict.labels) == 0:
         print("No object detected in the frame, skip the frame {}".format(start_frame_idx))
         continue
     video_predictor.reset_state(inference_state)
-
+    # 这里相当于在每一帧的每一个物体都是添加mask
     for object_id, object_info in mask_dict.labels.items():
         frame_idx, out_obj_ids, out_mask_logits = video_predictor.add_new_mask(
                 inference_state,
@@ -160,7 +160,7 @@ for start_frame_idx in range(0, len(frame_names), step):
         for i, out_obj_id in enumerate(out_obj_ids):
             out_mask = (out_mask_logits[i] > 0.0) # .cpu().numpy()
             object_info = ObjectInfo(instance_id = out_obj_id, mask = out_mask[0], class_name = mask_dict.get_target_class_name(out_obj_id))
-            object_info.update_box()
+            object_info.update_box() # mask 转换成 box
             frame_masks.labels[out_obj_id] = object_info
             image_base_name = frame_names[out_frame_idx].split(".")[0]
             frame_masks.mask_name = f"mask_{image_base_name}.npy"
